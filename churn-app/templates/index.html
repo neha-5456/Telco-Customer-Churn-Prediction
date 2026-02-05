@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChurnSense — Customer Churn Predictor</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-card: #111827;
+            --bg-card-hover: #1a2332;
+            --bg-input: #0d1321;
+            --border: #1e293b;
+            --border-focus: #3b82f6;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.15);
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+            --orange: #f97316;
+            --gradient-1: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            --gradient-2: linear-gradient(135deg, #06b6d4, #3b82f6);
+            --radius: 12px;
+            --radius-lg: 16px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.3);
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Background Effects ── */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: 0;
+        }
+
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.4;
+            z-index: 0;
+            animation: float 20s ease-in-out infinite;
+        }
+        .bg-orb-1 { width: 500px; height: 500px; background: #3b82f620; top: -100px; right: -100px; }
+        .bg-orb-2 { width: 400px; height: 400px; background: #8b5cf615; bottom: -50px; left: -80px; animation-delay: -10s; }
+        .bg-orb-3 { width: 300px; height: 300px; background: #06b6d410; top: 50%; left: 50%; animation-delay: -5s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.05); }
+            66% { transform: translate(-20px, 20px) scale(0.95); }
+        }
+
+        /* ── Layout ── */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 20px 60px;
+        }
+
+        /* ── Header ── */
+        .header {
+            text-align: center;
+            padding: 48px 0 40px;
+            animation: fadeDown 0.8s ease-out;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            background: var(--accent-glow);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .header-badge .dot {
+            width: 6px; height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(2.2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, #f1f5f9, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.15;
+            margin-bottom: 12px;
+        }
+
+        .header h1 span {
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 16px;
+            color: var(--text-secondary);
+            max-width: 520px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* ── Form Card ── */
+        .main-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 36px;
+            box-shadow: var(--shadow);
+            animation: fadeUp 0.8s ease-out 0.2s both;
+        }
+
+        .section-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title .icon {
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--accent-glow);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        .section-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 28px 0;
+        }
+
+        /* ── Form Grid ── */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .form-group select,
+        .form-group input {
+            background: var(--bg-input);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 14px;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .form-group select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+            cursor: pointer;
+        }
+
+        .form-group select option {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .form-group select:hover,
+        .form-group input:hover {
+            border-color: #334155;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* ── Predict Button ── */
+        .btn-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 32px;
+        }
+
+        .btn-predict {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 48px;
+            background: var(--gradient-1);
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.3px;
+            overflow: hidden;
+        }
+
+        .btn-predict::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .btn-predict:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-predict:hover::before { opacity: 1; }
+        .btn-predict span { position: relative; z-index: 1; }
+
+        .btn-predict:active { transform: translateY(0); }
+
+        .btn-predict:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .btn-predict .spinner {
+            width: 18px; height: 18px;
+            border: 2.5px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            display: none;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-predict.loading .spinner { display: block; }
+        .btn-predict.loading .btn-text { display: none; }
+        .btn-predict.loading .btn-icon { display: none; }
+
+        /* ── Results Panel ── */
+        .results-panel {
+            margin-top: 32px;
+            display: none;
+            animation: fadeUp 0.5s ease-out;
+        }
+
+        .results-panel.visible { display: block; }
+
+        .result-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 36px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .result-card.churn { border-color: rgba(239, 68, 68, 0.3); }
+        .result-card.no-churn { border-color: rgba(34, 197, 94, 0.3); }
+
+        .result-verdict {
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .result-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(1.8rem, 4vw, 2.4rem);
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .result-message {
+            color: var(--text-secondary);
+            font-size: 15px;
+            margin-bottom: 32px;
+        }
+
+        /* ── Gauge ── */
+        .gauge-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 32px;
+        }
+
+        .gauge {
+            position: relative;
+            width: 200px;
+            height: 200px;
+        }
+
+        .gauge svg {
+            transform: rotate(-90deg);
+        }
+
+        .gauge-bg {
+            fill: none;
+            stroke: var(--border);
+            stroke-width: 10;
+        }
+
+        .gauge-fill {
+            fill: none;
+            stroke-width: 10;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1.5s ease-out, stroke 0.5s ease;
+        }
+
+        .gauge-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .gauge-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 42px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .gauge-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        /* ── Stats Grid ── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .stat-item {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 14px;
+            text-align: center;
+        }
+
+        .stat-item .stat-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .stat-item .stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        /* ── Risk Badge ── */
+        .risk-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 16px;
+            border-radius: 100px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 24px;
+        }
+
+        .risk-badge .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            text-align: center;
+            padding: 40px 0 20px;
+            color: var(--text-muted);
+            font-size: 13px;
+            animation: fadeUp 0.8s ease-out 0.4s both;
+        }
+
+        .footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* ── Animations ── */
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .main-card { padding: 24px 18px; }
+            .form-grid { grid-template-columns: 1fr 1fr; }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 480px) {
+            .form-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ── Error Toast ── */
+        .toast-error {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #450a0a;
+            border: 1px solid #7f1d1d;
+            color: #fca5a5;
+            padding: 14px 20px;
+            border-radius: var(--radius);
+            font-size: 14px;
+            z-index: 100;
+            display: none;
+            animation: fadeUp 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Background Effects -->
+<div class="bg-grid"></div>
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+<div class="bg-orb bg-orb-3"></div>
+
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <div class="header-badge">
+            <div class="dot"></div>
+            ML-Powered Prediction
+        </div>
+        <h1><span>ChurnSense</span></h1>
+        <p>Predict whether a telecom customer is likely to churn using machine learning. Fill in the customer details below to get an instant risk assessment.</p>
+    </div>
+
+    <!-- Form -->
+    <div class="main-card" id="formCard">
+
+        <!-- Section: Demographics -->
+        <div class="section-title">
+            <div class="icon">👤</div>
+            Customer Demographics
+        </div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Gender</label>
+                <select id="gender">
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Senior Citizen</label>
+                <select id="SeniorCitizen">
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Partner</label>
+                <select id="Partner">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Dependents</label>
+                <select id="Dependents">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Section: Services -->
+        <div class="section-title">
+            <div class="icon">📡</div>
+            Service Details
+        </div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Phone Service</label>
+                <select id="PhoneService">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Multiple Lines</label>
+                <select id="MultipleLines">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No phone service">No phone service</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Internet Service</label>
+                <select id="InternetService">
+                    <option value="DSL">DSL</option>
+                    <option value="Fiber optic">Fiber optic</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Online Security</label>
+                <select id="OnlineSecurity">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No internet service">No internet service</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Online Backup</label>
+                <select id="OnlineBackup">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No internet service">No internet service</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Device Protection</label>
+                <select id="DeviceProtection">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No internet service">No internet service</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tech Support</label>
+                <select id="TechSupport">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No internet service">No internet service</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Streaming TV</label>
+                <select id="StreamingTV">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No internet service">No internet service</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Streaming Movies</label>
+                <select id="StreamingMovies">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No internet service">No internet service</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Section: Account -->
+        <div class="section-title">
+            <div class="icon">💳</div>
+            Account & Billing
+        </div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Tenure (months)</label>
+                <input type="number" id="tenure" placeholder="e.g. 12" min="0" max="72" value="12">
+            </div>
+            <div class="form-group">
+                <label>Contract</label>
+                <select id="Contract">
+                    <option value="Month-to-month">Month-to-month</option>
+                    <option value="One year">One year</option>
+                    <option value="Two year">Two year</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Paperless Billing</label>
+                <select id="PaperlessBilling">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Payment Method</label>
+                <select id="PaymentMethod">
+                    <option value="Electronic check">Electronic check</option>
+                    <option value="Mailed check">Mailed check</option>
+                    <option value="Bank transfer (automatic)">Bank transfer (automatic)</option>
+                    <option value="Credit card (automatic)">Credit card (automatic)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Monthly Charges ($)</label>
+                <input type="number" id="MonthlyCharges" placeholder="e.g. 70.50" min="0" step="0.01" value="70.50">
+            </div>
+            <div class="form-group">
+                <label>Total Charges ($)</label>
+                <input type="number" id="TotalCharges" placeholder="e.g. 846.00" min="0" step="0.01" value="846.00">
+            </div>
+        </div>
+
+        <!-- Predict Button -->
+        <div class="btn-container">
+            <button class="btn-predict" id="predictBtn" onclick="predict()">
+                <span class="btn-icon">⚡</span>
+                <span class="btn-text">Predict Churn Risk</span>
+                <div class="spinner"></div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div class="results-panel" id="resultsPanel">
+        <div class="result-card" id="resultCard">
+            <div class="result-verdict" id="resultVerdict"></div>
+            <div class="result-title" id="resultTitle"></div>
+            <div class="result-message" id="resultMessage"></div>
+
+            <div id="riskBadgeContainer" style="margin-bottom: 24px;"></div>
+
+            <!-- Gauge -->
+            <div class="gauge-container">
+                <div class="gauge">
+                    <svg width="200" height="200" viewBox="0 0 200 200">
+                        <circle class="gauge-bg" cx="100" cy="100" r="85"/>
+                        <circle class="gauge-fill" id="gaugeFill" cx="100" cy="100" r="85"
+                                stroke-dasharray="534" stroke-dashoffset="534"/>
+                    </svg>
+                    <div class="gauge-text">
+                        <div class="gauge-value" id="gaugeValue">0%</div>
+                        <div class="gauge-label">Churn Risk</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">Churn Prob</div>
+                    <div class="stat-value" id="statChurn" style="color: var(--danger);">—</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Stay Prob</div>
+                    <div class="stat-value" id="statStay" style="color: var(--success);">—</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Risk Level</div>
+                    <div class="stat-value" id="statRisk">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        Built with <strong>FastAPI</strong> + <strong>scikit-learn</strong> &nbsp;·&nbsp; 
+        Telco Customer Churn Dataset &nbsp;·&nbsp;
+        <a href="/docs" target="_blank">API Docs ↗</a>
+    </div>
+</div>
+
+<!-- Error Toast -->
+<div class="toast-error" id="toastError"></div>
+
+<script>
+    async function predict() {
+        const btn = document.getElementById('predictBtn');
+        const resultsPanel = document.getElementById('resultsPanel');
+
+        // Collect form data
+        const payload = {
+            gender: document.getElementById('gender').value,
+            SeniorCitizen: parseInt(document.getElementById('SeniorCitizen').value),
+            Partner: document.getElementById('Partner').value,
+            Dependents: document.getElementById('Dependents').value,
+            tenure: parseInt(document.getElementById('tenure').value) || 0,
+            PhoneService: document.getElementById('PhoneService').value,
+            MultipleLines: document.getElementById('MultipleLines').value,
+            InternetService: document.getElementById('InternetService').value,
+            OnlineSecurity: document.getElementById('OnlineSecurity').value,
+            OnlineBackup: document.getElementById('OnlineBackup').value,
+            DeviceProtection: document.getElementById('DeviceProtection').value,
+            TechSupport: document.getElementById('TechSupport').value,
+            StreamingTV: document.getElementById('StreamingTV').value,
+            StreamingMovies: document.getElementById('StreamingMovies').value,
+            Contract: document.getElementById('Contract').value,
+            PaperlessBilling: document.getElementById('PaperlessBilling').value,
+            PaymentMethod: document.getElementById('PaymentMethod').value,
+            MonthlyCharges: parseFloat(document.getElementById('MonthlyCharges').value) || 0,
+            TotalCharges: parseFloat(document.getElementById('TotalCharges').value) || 0
+        };
+
+        // Loading state
+        btn.classList.add('loading');
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                showError(data.error || 'Prediction failed');
+                return;
+            }
+
+            displayResults(data);
+
+        } catch (err) {
+            showError('Could not connect to server. Make sure it is running.');
+        } finally {
+            btn.classList.remove('loading');
+            btn.disabled = false;
+        }
+    }
+
+    function displayResults(data) {
+        const panel = document.getElementById('resultsPanel');
+        const card = document.getElementById('resultCard');
+        const isChurn = data.prediction === 1;
+
+        // Card border color
+        card.className = 'result-card ' + (isChurn ? 'churn' : 'no-churn');
+
+        // Verdict
+        const verdictEl = document.getElementById('resultVerdict');
+        verdictEl.textContent = isChurn ? '⚠ High Risk Detected' : '✓ Customer Likely Safe';
+        verdictEl.style.color = isChurn ? 'var(--danger)' : 'var(--success)';
+
+        // Title
+        const titleEl = document.getElementById('resultTitle');
+        titleEl.textContent = isChurn ? 'Likely to Churn' : 'Likely to Stay';
+        titleEl.style.color = isChurn ? 'var(--danger)' : 'var(--success)';
+
+        // Message
+        document.getElementById('resultMessage').textContent = data.message;
+
+        // Risk badge
+        const badgeContainer = document.getElementById('riskBadgeContainer');
+        badgeContainer.innerHTML = `
+            <span class="risk-badge" style="background: ${data.risk_color}15; color: ${data.risk_color}; border: 1px solid ${data.risk_color}30;">
+                <span class="dot" style="background: ${data.risk_color};"></span>
+                ${data.risk_level} Risk
+            </span>
+        `;
+
+        // Gauge animation
+        const gaugeFill = document.getElementById('gaugeFill');
+        const circumference = 2 * Math.PI * 85; // 534.07
+        const offset = circumference - (data.churn_probability / 100) * circumference;
+        gaugeFill.style.stroke = data.risk_color;
+        gaugeFill.style.strokeDashoffset = circumference; // Reset
+        requestAnimationFrame(() => {
+            gaugeFill.style.strokeDashoffset = offset;
+        });
+
+        // Animate gauge number
+        animateValue('gaugeValue', 0, data.churn_probability, 1200, '%');
+
+        // Stats
+        document.getElementById('statChurn').textContent = data.churn_probability + '%';
+        document.getElementById('statStay').textContent = data.stay_probability + '%';
+        const riskEl = document.getElementById('statRisk');
+        riskEl.textContent = data.risk_level;
+        riskEl.style.color = data.risk_color;
+
+        // Show panel
+        panel.classList.add('visible');
+        panel.style.animation = 'none';
+        panel.offsetHeight; // trigger reflow
+        panel.style.animation = 'fadeUp 0.5s ease-out';
+
+        // Scroll to results
+        setTimeout(() => {
+            panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+    }
+
+    function animateValue(elementId, start, end, duration, suffix) {
+        const el = document.getElementById(elementId);
+        const startTime = performance.now();
+        
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            // ease-out cubic
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const current = Math.round(start + (end - start) * eased * 10) / 10;
+            el.textContent = current + suffix;
+            
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            }
+        }
+        requestAnimationFrame(update);
+    }
+
+    function showError(msg) {
+        const toast = document.getElementById('toastError');
+        toast.textContent = '✕ ' + msg;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    }
+</script>
+
+</body>
+</html>
